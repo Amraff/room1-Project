@@ -75,7 +75,9 @@ jobs:
           aws cloudformation deploy \
             --template-file template.yaml \
             --stack-name $STACK_NAME \
-            --capabilities CAPABILITY_NAMED_IAM
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides ConformityApiKey=${{ secrets.CONFORMITY_API_KEY }}
+
 
       - name: Debug CloudFormation Failure
         if: failure()

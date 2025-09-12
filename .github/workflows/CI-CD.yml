@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  CONFORMITY_REGION: us-1
+  CONFORMITY_REGION: us-west-2
   STACK_NAME: DeployedAppStack
   S3_BUCKET: Room1Bucket-56789   # Replace with your S3 bucket name
 

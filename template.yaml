@@ -17,7 +17,7 @@ Resources:
   SampleS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: sample-cicd-bucket-123456
+      BucketName: room1bucket20250912
 
   # ---------- IAM Role ----------
   SampleIAMRole:

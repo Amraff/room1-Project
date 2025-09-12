@@ -1,6 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: CI/CD Pipeline with Conformity Scan and Deploy (GitHub Source via CodeStar Connection)
 
+Parameters:
+  ConformityApiKey:
+    Type: String
+    Description: "API key for Conformity scan"
+    NoEcho: true
+
 Resources:
   # ----------------------------
   # S3 Bucket for CodePipeline Artifacts
@@ -24,7 +30,7 @@ Resources:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
 
   # ----------------------------
   # IAM Role for CloudFormation execution
@@ -40,7 +46,7 @@ Resources:
               Service: cloudformation.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
 
   # ----------------------------
   # IAM Role for CodeBuild
@@ -56,7 +62,7 @@ Resources:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
 
   # ----------------------------
   # CodeBuild Project
@@ -73,7 +79,7 @@ Resources:
         Image: aws/codebuild/standard:6.0
         EnvironmentVariables:
           - Name: CONFORMITY_API_KEY
-            Value: "YOUR_API_KEY_HERE"
+            Value: !Ref ConformityApiKey
           - Name: CONFORMITY_REGION
             Value: "us-west-2"
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn

@@ -77,6 +77,15 @@ jobs:
             --stack-name $STACK_NAME \
             --capabilities CAPABILITY_NAMED_IAM
 
+      - name: Debug CloudFormation Failure
+        if: failure()
+        run: |
+          echo "🔍 Fetching CloudFormation failure details..."
+          aws cloudformation describe-stack-events --stack-name $STACK_NAME \
+            --query 'StackEvents[0]' \
+            --output json || echo "⚠️ Unable to retrieve stack events. Stack may not exist."
+
+
       - name: Post-Deploy Conformity Scan
         run: |
           aws cloudformation get-template \

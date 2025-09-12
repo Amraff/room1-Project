@@ -9,7 +9,7 @@ Parameters:
 
 Resources:
   # ----------------------------
-  # S3 Bucket for CodePipeline Artifacts
+  # S3 Bucket for CodePipeline Artifacts 
   # ----------------------------
   ArtifactBucket:
     Type: AWS::S3::Bucket
@@ -17,7 +17,7 @@ Resources:
       BucketName: !Sub "cicd-artifacts-${AWS::AccountId}-${AWS::Region}"
 
   # ----------------------------
-  # IAM Role for CodePipeline
+  # IAM Role for CodePipeline !
   # ----------------------------
   PipelineRole:
     Type: AWS::IAM::Role

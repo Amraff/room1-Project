@@ -59,6 +59,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Clean up existing CloudFormation stack
+        run: |
+          if aws cloudformation describe-stacks --stack-name $STACK_NAME; then
+            echo "⚠️ Stack $STACK_NAME exists. Deleting..."
+            aws cloudformation delete-stack --stack-name $STACK_NAME
+            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
+            echo "✅ Stack $STACK_NAME deleted successfully."
+          else
+            echo "ℹ️ Stack $STACK_NAME does not exist. Proceeding with deployment."
+          fi
+
       - name: Deploy CloudFormation Stack
         run: |
           aws cloudformation deploy \

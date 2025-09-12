@@ -1,29 +1,48 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Sample CloudFormation template for CI/CD pipeline testing
+Description: CI/CD Pipeline with Conformity Scan and Deploy (GitHub Source via CodeStar Connection)
 
 Parameters:
-  InstanceType:
-    Description: EC2 instance type
+  ConformityApiKey:
     Type: String
-    Default: t2.micro
-    AllowedValues:
-      - t2.micro
-      - t2.small
-      - t2.medium
-    ConstraintDescription: Must be a valid EC2 instance type.
+    Description: "API key for Conformity scan"
+    NoEcho: true
 
 Resources:
-  # ---------- S3 Bucket ----------
-  SampleS3Bucket:
+  ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: room1bucket20250912
+      BucketName: !Sub "cicd-artifacts-${AWS::AccountId}-${AWS::Region}"
 
-  # ---------- IAM Role ----------
-  SampleIAMRole:
+  PipelineRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "SampleBuildRole-${AWS::Region}-${AWS::AccountId}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  CloudFormationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -33,40 +52,81 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
-
-  # ---------- EC2 Security Group ----------
-  EC2SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  MyBuildProject:
+    Type: AWS::CodeBuild::Project
     Properties:
-      GroupDescription: "Allow HTTP access only"
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
+      Name: !Sub "MyBuildProject-${AWS::Region}"
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:6.0
+        EnvironmentVariables:
+          - Name: CONFORMITY_API_KEY
+            Value: !Ref ConformityApiKey
+          - Name: CONFORMITY_REGION
+            Value: "us-west-2"
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
 
-  # ---------- EC2 Instance ----------
-  MyEC2Instance:
-    Type: AWS::EC2::Instance
+  CICDPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn: MyBuildProject
     Properties:
-      InstanceType: !Ref InstanceType
-      ImageId: ami-0b09ffb6d8b58ca91 # Amazon Linux 2 in us-east-1
-      SecurityGroupIds:
-        - !Ref EC2SecurityGroup
-      Tags:
-        - Key: Name
-          Value: CI-CD-EC2-Instance-NoKey
+      RoleArn: !GetAtt PipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              Configuration:
+                ConnectionArn: arn:aws:codeconnections:us-east-1:927311782751:connection/a92986bb-9866-4284-aea3-763947b7fe31
+                FullRepositoryId: raphewkarimissah/CI-CD-PIPELINE-PROJECT
+                BranchName: main
+              OutputArtifacts:
+                - Name: SourceOutput
 
-Outputs:
-  EC2InstanceId:
-    Description: "Instance ID of the deployed EC2"
-    Value: !Ref MyEC2Instance
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref MyBuildProject
+              RunOrder: 1
 
-  EC2PublicIP:
-    Description: "Public IP address of the EC2 instance"
-    Value: !GetAtt MyEC2Instance.PublicIp
-
-  SampleS3BucketName:
-    Description: "Name of the sample S3 bucket"
-    Value: !Ref SampleS3Bucket
+        - Name: Deploy
+          Actions:
+            - Name: DeployCFN
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              InputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: DeployedAppStack
+                TemplatePath: BuildOutput::template.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+              RunOrder: 1

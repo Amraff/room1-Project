@@ -23,7 +23,7 @@ Resources:
   SampleIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: SampleBuildRole
+      RoleName: !Sub "SampleBuildRole-${AWS::Region}-${AWS::AccountId}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -32,7 +32,8 @@ Resources:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+
 
   # ---------- EC2 Security Group ----------
   EC2SecurityGroup:

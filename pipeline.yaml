@@ -75,7 +75,7 @@ Resources:
           - Name: CONFORMITY_API_KEY
             Value: "YOUR_API_KEY_HERE"
           - Name: CONFORMITY_REGION
-            Value: "us-1"
+            Value: "us-west-2"
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Artifacts:
         Type: CODEPIPELINE

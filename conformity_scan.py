@@ -6,7 +6,7 @@ import yaml
 
 # Load environment variables
 api_key = os.getenv("CONFORMITY_API_KEY")
-region = os.getenv("CONFORMITY_REGION", "us-1")
+region = os.getenv("CONFORMITY_REGION", "us-west-2")
 
 if not api_key:
     print("❌ Missing CONFORMITY_API_KEY in environment")

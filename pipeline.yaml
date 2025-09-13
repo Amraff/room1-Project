@@ -92,7 +92,7 @@ Resources:
         Type: CODEPIPELINE
 
   # ----------------------------
-  # CodePipeline
+  # CodePipeline !
   # ----------------------------
   CICDPipeline:
     Type: AWS::CodePipeline::Pipeline

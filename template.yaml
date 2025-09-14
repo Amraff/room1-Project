@@ -11,7 +11,7 @@ Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "cicd-artifacts-${AWS::AccountId}-${AWS::Region}"
+      BucketName: bucketunique-45434
 
   PipelineRole:
     Type: AWS::IAM::Role
